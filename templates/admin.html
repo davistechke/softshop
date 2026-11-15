@@ -1,0 +1,82 @@
+{% extends "base.html" %}{% block title %}Admin{% endblock %}{% block body %}
+<div style="display:flex;justify-content:space-between;align-items:center">
+<h1>Admin</h1>
+<form method="post" action="{{ url_for('admin_logout') }}"><button class="btn sec sm">Log out</button></form></div>
+<p class="mut">Revenue (confirmed payments): <b class="price">{{ revenue|kes }}</b></p>
+
+<div class="card">
+<h2>Upload software</h2>
+<div id="drop" style="border:2px dashed var(--line);border-radius:12px;padding:30px;text-align:center;cursor:pointer">
+  <div style="font-size:2rem">⬆️</div>
+  <div>Drag & drop an <b>.apk</b>, a <b>.zip</b>, files, or a whole <b>folder</b> here</div>
+  <p class="mut">or
+    <a href="#" id="pickFiles">choose file(s)</a> ·
+    <a href="#" id="pickFolder">choose a folder</a></p>
+  <div id="sel" class="mut"></div>
+</div>
+<input type="file" id="fileIn" multiple hidden>
+<input type="file" id="folderIn" webkitdirectory directory multiple hidden>
+<label>Name (optional)</label><input id="name" placeholder="Defaults to the file name">
+<label>Price (KES)</label><input id="price" type="number" min="1" step="1" placeholder="e.g. 500">
+<label>Description</label><textarea id="desc" rows="3"></textarea>
+<p><button class="btn" id="go">Upload &amp; publish</button></p>
+<div id="bar" style="display:none;height:10px;background:var(--line);border-radius:9px;overflow:hidden"><div id="fill" style="height:100%;width:0;background:var(--ac)"></div></div>
+<div id="err" class="mut" style="color:var(--bad)"></div>
+</div>
+
+<h2 style="margin-top:28px">Products</h2>
+{% for p in products %}
+<form class="card" method="post" action="{{ url_for('admin_update', pid=p.id) }}" style="margin-bottom:12px">
+<input type="hidden" name="csrf" value="{{ csrf_token() }}">
+<div class="mut">{{ p.original_name }} · {{ p.size|filesize }} · {{ p.sales }} sale(s)</div>
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:10px">
+<div><label>Name</label><input name="name" value="{{ p.name }}"></div>
+<div><label>Price (KES)</label><input name="price" type="number" min="1" value="{{ p.price }}"></div></div>
+<label>Description</label><textarea name="description" rows="2">{{ p.description }}</textarea>
+<p><label style="display:inline"><input type="checkbox" name="active" style="width:auto" {{ 'checked' if p.active }}> Visible in store</label>
+&nbsp; <button class="btn sm">Save</button>
+<button class="btn red sm" formaction="{{ url_for('admin_delete', pid=p.id) }}" onclick="return confirm('Delete this product?')">Delete</button>
+&nbsp; <a href="{{ url_for('product', pid=p.id) }}" target="_blank">View page ↗</a></p>
+</form>
+{% else %}<div class="card mut">No products yet.</div>{% endfor %}
+
+<h2 style="margin-top:28px">Recent orders</h2>
+<div class="card overflow"><table><tr><th>Date (UTC)</th><th>Product</th><th>Phone</th><th>Amount</th><th>Status</th><th>Receipt</th><th>DLs</th></tr>
+{% for o in orders %}<tr><td>{{ o.created_at }}</td><td>{{ o.pname }}</td><td>{{ o.phone }}</td><td>{{ o.amount|kes }}</td>
+<td><span class="tag {{ o.status }}">{{ o.status }}</span></td><td>{{ o.receipt or '' }}</td><td>{{ o.downloads }}</td></tr>
+{% else %}<tr><td colspan="7" class="mut">No orders yet.</td></tr>{% endfor %}</table></div>
+
+<script>
+var items=[];const $=id=>document.getElementById(id);
+function show(){const n=items.length,s=items.reduce((a,i)=>a+i.file.size,0);
+ $('sel').textContent=n?`${n} file(s) selected · ${(s/1048576).toFixed(1)} MB`+(n===1?' · '+items[0].path:''):'';}
+function addFileList(list){items=[];for(const f of list)items.push({file:f,path:f.webkitRelativePath||f.name});show()}
+$('pickFiles').onclick=e=>{e.preventDefault();$('fileIn').click()};
+$('pickFolder').onclick=e=>{e.preventDefault();$('folderIn').click()};
+$('fileIn').onchange=e=>addFileList(e.target.files);
+$('folderIn').onchange=e=>addFileList(e.target.files);
+$('drop').ondragover=e=>{e.preventDefault();$('drop').style.borderColor='var(--ac)'};
+$('drop').ondragleave=()=>$('drop').style.borderColor='';
+function readAll(reader){return new Promise((res,rej)=>{let all=[];(function next(){reader.readEntries(b=>{if(!b.length)return res(all);all=all.concat(b);next()},rej)})()})}
+async function walk(entry,out){
+ if(entry.isFile){await new Promise(r=>entry.file(f=>{out.push({file:f,path:entry.fullPath.replace(/^\//,'')});r()}))}
+ else if(entry.isDirectory){for(const c of await readAll(entry.createReader()))await walk(c,out)}}
+$('drop').ondrop=async e=>{e.preventDefault();$('drop').style.borderColor='';
+ const entries=[...e.dataTransfer.items].map(i=>i.webkitGetAsEntry&&i.webkitGetAsEntry()).filter(Boolean);
+ const out=[];for(const en of entries)await walk(en,out);items=out;show()};
+$('go').onclick=()=>{
+ $('err').textContent='';
+ if(!items.length)return $('err').textContent='Add a file or folder first.';
+ if(!($('price').value>0))return $('err').textContent='Set a price.';
+ const fd=new FormData();fd.append('csrf','{{ csrf_token() }}');fd.append('name',$('name').value);
+ fd.append('price',$('price').value);fd.append('description',$('desc').value);
+ items.forEach(i=>{fd.append('files',i.file,i.file.name);fd.append('paths',i.path)});
+ const x=new XMLHttpRequest();x.open('POST','{{ url_for("admin_upload") }}');
+ $('bar').style.display='block';$('go').disabled=true;
+ x.upload.onprogress=e=>{if(e.lengthComputable)$('fill').style.width=(e.loaded/e.total*100)+'%'};
+ x.onload=()=>{let d={};try{d=JSON.parse(x.responseText)}catch(_){}
+  if(x.status===200)location.reload();else{$('err').textContent=d.error||('Upload failed ('+x.status+')');$('go').disabled=false}};
+ x.onerror=()=>{$('err').textContent='Network error during upload.';$('go').disabled=false};
+ x.send(fd)};
+</script>
+{% endblock %}

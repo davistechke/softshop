@@ -1,0 +1,10 @@
+{% extends "base.html" %}{% block body %}
+<h1>Software</h1><p class="mut">Pay with M-Pesa and download instantly. No account needed.</p>
+{% if not products %}<div class="card center mut">Nothing for sale yet. Check back soon.</div>{% endif %}
+<div class="grid">{% for p in products %}
+<a class="card" href="{{ url_for('product', pid=p.id) }}" style="color:inherit">
+<h2 style="font-size:1.1rem">{{ p.name }}</h2>
+<p class="mut">{{ (p.description or '')[:110] }}</p>
+<div class="price">{{ p.price|kes }}</div><div class="mut">{{ p.original_name }} · {{ p.size|filesize }}</div>
+</a>{% endfor %}</div>
+{% endblock %}

@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{% block title %}Software Store{% endblock %}</title>
+<style>
+:root{--bg:#0f1117;--card:#181b24;--line:#272b38;--tx:#e8eaf0;--mut:#8b91a3;--ac:#22c55e;--ac2:#16a34a;--bad:#ef4444}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.5 system-ui,Segoe UI,Roboto,sans-serif}
+a{color:var(--ac);text-decoration:none}.wrap{max-width:1000px;margin:0 auto;padding:20px}
+header{border-bottom:1px solid var(--line)}header .wrap{display:flex;justify-content:space-between;align-items:center}
+.logo{font-weight:700;font-size:1.2rem;color:var(--tx)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}
+.price{color:var(--ac);font-weight:700;font-size:1.25rem}.mut{color:var(--mut);font-size:.9rem}
+input,textarea{width:100%;background:#0f1117;border:1px solid var(--line);color:var(--tx);border-radius:10px;padding:11px;font:inherit}
+label{display:block;margin:12px 0 5px;color:var(--mut);font-size:.9rem}
+.btn{display:inline-block;background:var(--ac);color:#04130a;border:0;border-radius:10px;padding:11px 18px;font-weight:700;cursor:pointer;font-size:1rem}
+.btn:hover{background:var(--ac2)}.btn.sec{background:#262a38;color:var(--tx)}.btn.red{background:var(--bad);color:#fff}.btn.sm{padding:6px 12px;font-size:.85rem}
+.flash{padding:11px 14px;border-radius:10px;margin-bottom:14px}.flash.error{background:#3b1518;color:#fca5a5}.flash.ok{background:#12301e;color:#86efac}
+table{width:100%;border-collapse:collapse;font-size:.9rem}th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+.tag{padding:2px 9px;border-radius:99px;font-size:.78rem;background:#262a38}.tag.paid{background:#12301e;color:#86efac}.tag.failed{background:#3b1518;color:#fca5a5}
+.overflow{overflow-x:auto}h1,h2{margin:.2em 0 .5em}.center{text-align:center}
+</style></head><body>
+<header><div class="wrap"><a class="logo" href="/">📦 Software Store</a></div></header>
+<div class="wrap">
+{% with m = get_flashed_messages(with_categories=true) %}{% for c,t in m %}<div class="flash {{c}}">{{t}}</div>{% endfor %}{% endwith %}
+{% block body %}{% endblock %}
+</div></body></html>

@@ -1,0 +1,4 @@
+{% extends "base.html" %}{% block title %}Admin{% endblock %}{% block body %}
+<div class="card" style="max-width:380px;margin:40px auto"><h2>Admin</h2>
+<form method="post"><label>Username</label><input name="username" autocomplete="username" autofocus required><label>Password</label><input type="password" name="password" autocomplete="current-password" required>
+<p><button class="btn" style="width:100%">Sign in</button></p></form></div>{% endblock %}

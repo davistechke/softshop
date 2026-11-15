@@ -1,0 +1,28 @@
+{% extends "base.html" %}{% block title %}Your order{% endblock %}{% block body %}
+<div class="card center" style="max-width:520px;margin:auto">
+<h1>{{ o.pname }}</h1><div class="price">{{ o.amount|kes }}</div>
+{% if o.status == 'paid' %}
+  <p class="flash ok">✅ Payment confirmed{% if o.receipt %} · Receipt {{ o.receipt }}{% endif %}</p>
+  {% if limit_reached %}
+    <p class="flash error">Download limit reached ({{ max_downloads }}). Contact the seller.</p>
+  {% else %}
+    <a class="btn" href="{{ url_for('download', token=o.token) }}">⬇ Download {{ o.original_name }}</a>
+    <p class="mut">{{ o.size|filesize }}{% if max_downloads %} · {{ o.downloads }}/{{ max_downloads }} downloads used{% endif %}</p>
+  {% endif %}
+  <p class="mut">Bookmark this page. This link is your proof of purchase.</p>
+  <script>try{var m=JSON.parse(localStorage.getItem('purchases')||'{}');m['{{o.product_id}}']='{{o.token}}';localStorage.setItem('purchases',JSON.stringify(m))}catch(e){}</script>
+{% elif o.status == 'failed' %}
+  <p class="flash error">Payment failed or was cancelled.</p>
+  <a class="btn" href="{{ url_for('product', pid=o.product_id) }}">Try again</a>
+{% else %}
+  <p>📱 Check your phone <b>{{ o.phone }}</b> and enter your M-Pesa PIN.</p>
+  <p class="mut" id="msg">Waiting for confirmation…</p>
+  {% if simulate %}<form method="post" action="{{ url_for('simulate', token=o.token) }}"><button class="btn sec">Simulate successful payment (test mode)</button></form>{% endif %}
+  <script>
+  var n=0,iv=setInterval(function(){fetch('/order/{{o.token}}/status').then(r=>r.json()).then(d=>{
+    if(d.status!=='pending'){clearInterval(iv);location.reload()}
+    else if(++n>100){clearInterval(iv);document.getElementById('msg').textContent='Still waiting. If you paid, refresh this page in a minute.'}
+  }).catch(()=>{})},3000);
+  </script>
+{% endif %}
+</div>{% endblock %}
